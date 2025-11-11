@@ -11,7 +11,7 @@ pipeline {
         APP_IMAGE_NAME     = "dev-excuse-app" // Hoặc tên bạn muốn
         DOCKER_CREDS       = "5ec413a4-84e5-4ca6-bbf4-9a1800bee624"
         PROD_SERVER_CREDS  = "807ad1b3-3859-423d-9c60-57d49e0153bf"
-        PROD_SERVER_HOST   = "hatthanh@192.168.1.4" // user@ip-server-prod
+        PROD_SERVER_HOST   = "hatthanh@192.168.1.4" 
         CONTAINER_NAME     = "dev-excuse-prod"
         
         DOCKER_IMAGE_TAGGED = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.BUILD_NUMBER}"
