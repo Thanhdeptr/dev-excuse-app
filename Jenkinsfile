@@ -2,8 +2,6 @@ pipeline {
     agent {
         docker {
             image 'hatanthanh/my-jenkins-agent:latest'
-            
-            // Cần thiết để agent (thợ xây) có thể gọi lệnh 'docker build'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
