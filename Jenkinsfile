@@ -33,7 +33,8 @@ pipeline {
             steps {
                 echo "Running tests..."
                 sh "npm install"
-                sh "npm run test" // (Đảm bảo bạn có script 'test' trong package.json)
+                // Đảm bảo bạn có script 'test' trong package.json
+                sh "npm run test"
             }
         }
 
