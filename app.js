@@ -19,7 +19,12 @@ app.get('/', (req, res) => {
     res.status(200).send(`<h1>${randomExcuse}</h1>`);
 });
 
-// Xuất server để test và chạy
-module.exports = app.listen(port, () => {
-    console.log(`Dev Excuse App listening on port ${port}`);
-});
+// Export app instance for testing
+module.exports = app;
+
+// Start server only if this file is run directly (not when required)
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`Dev Excuse App listening on port ${port}`);
+    });
+}
