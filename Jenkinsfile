@@ -2,8 +2,7 @@ pipeline {
     agent {
         docker {
             image 'hatanthanh/my-jenkins-agent:latest'
-            user 'root'
-            args "--entrypoint='' -v /var/run/docker.sock:/var/run/docker.sock"
+            args '--entrypoint "" -u root -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
