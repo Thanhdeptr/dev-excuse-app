@@ -1,25 +1,19 @@
 # Bước 1: Bắt đầu từ image Node.js 18 trên nền Alpine
-# Điều này cung cấp sẵn Node, npm, và một user không-phải-root tên là 'node'
+# Image này đã có sẵn user 'node' (UID 1000) và group 'node' (GID 1000)
 FROM node:18-alpine
 
 # Bước 2: Chuyển sang user 'root' tạm thời để cài đặt các gói
 USER root
 
 # Bước 3: Cài đặt tất cả các công cụ (dependencies) còn thiếu
-#         --no-cache: giữ cho image nhẹ
-#         git: Cần thiết cho stage 'Checkout SCM'
-#         docker-cli: Cần thiết cho stage 'Containerize' (để chạy docker build/push)
-#         openssh-client: Cần thiết cho stage 'Deploy' (để chạy ssh/sshagent)
 RUN apk add --no-cache \
     git \
     docker-cli \
     openssh-client
 
 # Bước 4: Chuyển về user 'node' (không-phải-root) để chạy pipeline
-# Đây là user mặc định có sẵn trong image 'node:18-alpine'
-# Đây là một thực hành bảo mật tốt (Least Privilege)
-USER jenkins
+# User này đã có UID/GID là 1000, khớp với Jenkins Master
+USER node
 
 # Bước 5: Đặt thư mục làm việc mặc định cho agent
-# Đây là nơi Jenkins sẽ checkout code và làm việc
-WORKDIR /home/jenkins
+WORKDIR /home/node
