@@ -16,15 +16,6 @@ A complete CI/CD pipeline demo using Jenkins and Docker. Automatically tests, bu
   - "It must be a caching issue."
   - "It's not a bug, it's an undocumented feature."
 
-### Run Locally
-
-```bash
-npm install
-npm start    # Runs on port 3000
-npm test     # Run unit tests
-```
-
----
 
 ## 🏗️ CI/CD Architecture (Docker-out-of-Docker)
 
