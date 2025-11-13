@@ -9,7 +9,10 @@ pipeline {
             //    Bằng cách vô hiệu hóa entrypoint của image 'node'
             entrypoint: '', 
             
-            // 3. 'args' cho CÁC CỜ CÒN LẠI
+            // 3. Luôn pull image mới nhất từ registry (đảm bảo có agent image mới nhất)
+            alwaysPull: true,
+            
+            // 4. 'args' cho CÁC CỜ CÒN LẠI
             //    --network jenkins: Sửa lỗi "treo" (bắt buộc, để agent chung mạng master)
             //    -v ...: Mount Docker socket (bắt buộc, để chạy 'docker build')
             args: '--network jenkins -v /var/run/docker.sock:/var/run/docker.sock'
