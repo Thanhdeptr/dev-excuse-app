@@ -1,8 +1,8 @@
-# 🚀 Developer Excuse App - CI/CD Pipeline Demo
+# Developer Excuse App - CI/CD Pipeline Demo
 
 A complete CI/CD pipeline demo using Jenkins and Docker. Automatically tests, builds, and deploys a Node.js API that returns random developer excuses.
 
-## 📱 Application Overview
+## Application Overview
 
 **Developer Excuse App** is a simple Node.js/Express.js web application that returns random developer excuses via a single endpoint.
 
@@ -17,7 +17,7 @@ A complete CI/CD pipeline demo using Jenkins and Docker. Automatically tests, bu
   - "It's not a bug, it's an undocumented feature."
 
 
-## 🏗️ CI/CD Architecture (Docker-out-of-Docker)
+## CI/CD Architecture (Docker-out-of-Docker)
 
 The pipeline uses a **Docker-out-of-Docker (DooD)** architecture with 3 components:
 
@@ -31,7 +31,7 @@ The pipeline uses a **Docker-out-of-Docker (DooD)** architecture with 3 componen
 
 ---
 
-## 🌊 Pipeline Flow
+## Pipeline Flow
 
 1. Developer pushes code to `main` branch
 2. GitHub webhook triggers Jenkins (via ngrok)
@@ -45,7 +45,7 @@ The pipeline uses a **Docker-out-of-Docker (DooD)** architecture with 3 componen
 
 ---
 
-## 🔧 Pipeline Stages
+## Pipeline Stages
 
 ### Stage 1: Checkout Code
 ```groovy
@@ -83,7 +83,7 @@ agent {
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **CI/CD:** Jenkins (Blue Ocean), Docker, Docker Hub
 - **App:** Node.js, Express.js, Mocha, Supertest
@@ -91,7 +91,7 @@ agent {
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Required Jenkins Credentials
 
@@ -119,7 +119,7 @@ grep docker /etc/group
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 dev-excuse-app/
@@ -133,7 +133,7 @@ dev-excuse-app/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. Clone repository
 2. Configure Jenkins credentials
@@ -143,7 +143,7 @@ dev-excuse-app/
 
 ---
 
-## 📝 Notes
+## Notes
 
 - Designed for demo/learning purposes
 - Ensure production server has Docker installed
