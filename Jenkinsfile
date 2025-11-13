@@ -1,11 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'hatanthanh/my-jenkins-agent:latest'
-            args '--entrypoint "" -u root -v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
-
+    agent any
     environment {
         DOCKERHUB_USERNAME = "hatanthanh"
         APP_IMAGE_NAME     = "dev-excuse-app" // Hoặc tên bạn muốn
