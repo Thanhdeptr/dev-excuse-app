@@ -14,8 +14,9 @@ pipeline {
             
             // 4. 'args' cho CÁC CỜ CÒN LẠI
             //    --network jenkins: Sửa lỗi "treo" (bắt buộc, để agent chung mạng master)
+            //    --group-add 984: Ép container nhận quyền của group Docker Host (GID 984)
             //    -v ...: Mount Docker socket (bắt buộc, để chạy 'docker build')
-            args: '--network jenkins -v /var/run/docker.sock:/var/run/docker.sock'
+            args: '--network jenkins --group-add 984 -v /var/run/docker.sock:/var/run/docker.sock'
         )
     }
 
@@ -55,6 +56,9 @@ pipeline {
         stage('3. Containerize (Build & Push)') {
             steps {
                 echo "Building and pushing ${DOCKER_IMAGE_TAGGED}..."
+                // Debug: Kiểm tra xem user hiện tại có thuộc group 984 chưa
+                sh "id"
+                
                 withCredentials([usernamePassword(credentialsId: DOCKER_CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh "docker login -u ${USER} -p ${PASS}"
                     // Build image ứng dụng (dùng file 'Dockerfile' trong repo)
