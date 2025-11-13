@@ -11,8 +11,16 @@ RUN apk add --no-cache \
     docker-cli \
     openssh-client
 
+# Bước 3.5: Thêm user 'node' vào group 'docker' để có quyền chạy docker commands
+# QUAN TRỌNG: GID phải khớp với GID của docker group trên HOST (nơi chạy Jenkins)
+# Trên host của bạn: docker:x:984 (GID = 984)
+# Khi mount docker socket từ host, quyền truy cập phụ thuộc vào GID này
+RUN addgroup -g 984 docker 2>/dev/null || true && \
+    addgroup node docker
+
 # Bước 4: Chuyển về user 'node' (không-phải-root) để chạy pipeline
 # User này đã có UID/GID là 1000, khớp với Jenkins Master
+# User node giờ đã là member của docker group, có thể chạy docker commands
 USER node
 
 # Bước 5: Đặt thư mục làm việc mặc định cho agent

@@ -52,7 +52,6 @@ pipeline {
         stage('3. Containerize (Build & Push)') {
             steps {
                 echo "Building and pushing ${DOCKER_IMAGE_TAGGED}..."
-                // Lệnh 'docker' đã có sẵn trong agent
                 withCredentials([usernamePassword(credentialsId: DOCKER_CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh "docker login -u ${USER} -p ${PASS}"
                     // Build image ứng dụng (dùng file 'Dockerfile' trong repo)
