@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKERHUB_USERNAME = "hatanthanh"
-        APP_IMAGE_NAME     = "dev-excuse-app" // Hoặc tên bạn muốn
+        APP_IMAGE_NAME     = "dev-excuse-app" 
         DOCKER_CREDS       = "5ec413a4-84e5-4ca6-bbf4-9a1800bee624"
         PROD_SERVER_CREDS  = "807ad1b3-3859-423d-9c60-57d49e0153bf"
         PROD_SERVER_HOST   = "hatthanh@192.168.1.4" 
