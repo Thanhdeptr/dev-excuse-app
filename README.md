@@ -1,4 +1,4 @@
-# Developer Excuse App - CI/CD Pipeline Demo
+# Developer Excuse App - Jenkins CI/CD Pipeline
 
 A complete CI/CD pipeline demo using Jenkins and Docker. Automatically tests, builds, and deploys a Node.js API that returns random developer excuses.
 
@@ -31,6 +31,46 @@ The pipeline uses a **Docker-out-of-Docker (DooD)** architecture with 3 componen
 
 ---
 
+## Jenkins Setup & Configuration
+
+This project uses **Jenkins Blue Ocean** with a **Docker-out-of-Docker (DooD)** architecture.
+
+### Jenkins Infrastructure
+
+- **Jenkins Master:** Runs in Docker container (`jenkinsci/blueocean`), accessible at `http://localhost:8080`
+- **Socat:** TCP proxy container that forwards Docker socket communication (`tcp://socat:2375`)
+- **Dynamic Agent:** Custom agent image (`hatanthanh/my-jenkins-agent`) spawned on-demand for each pipeline run
+
+### Jenkins Configuration
+
+**Required Plugins:**
+- Blue Ocean (modern UI)
+- Docker Pipeline
+- GitHub (webhook integration)
+- SSH Agent
+- Credentials Binding
+
+**Docker Integration:**
+- Jenkins communicates with Docker daemon via Socat TCP proxy
+- Docker Cloud configured with URI: `tcp://socat:2375`
+- Both Jenkins and Socat run on shared `jenkins` network
+
+**Pipeline Job:**
+- Type: Pipeline (from SCM)
+- Source: GitHub repository
+- Script: `Jenkinsfile` in repository root
+- Trigger: GitHub webhook (via ngrok for local development)
+
+### Jenkinsfile Structure
+
+The pipeline uses **Declarative Pipeline** syntax with 4 main stages:
+1. Checkout code from GitHub
+2. Run unit tests
+3. Build and push Docker image
+4. Deploy to production server
+
+---
+
 ## Pipeline Flow
 
 1. Developer pushes code to `main` branch
@@ -48,38 +88,44 @@ The pipeline uses a **Docker-out-of-Docker (DooD)** architecture with 3 componen
 ## Pipeline Stages
 
 ### Stage 1: Checkout Code
-```groovy
-checkout scm
-```
+Retrieves source code from GitHub repository using `checkout scm`.
 
 ### Stage 2: Linting & Unit Test
-```groovy
-sh "npm install"
-sh "npm run test"
-```
+- Installs dependencies: `npm install`
+- Runs unit tests: `npm run test` (using Mocha and Supertest)
+- Validates API endpoint returns correct format
 
 ### Stage 3: Containerize (Build & Push)
-- Docker login with credentials
-- Build image: `docker build -t ${DOCKER_IMAGE_TAGGED} .`
-- Tag and push to Docker Hub
+- Authenticates with Docker Hub using stored credentials
+- Builds application image using `Dockerfile`
+- Tags image with build number and `latest`
+- Pushes both tags to Docker Hub registry
 
 ### Stage 4: Deploy to Production
-- SSH into production server
-- Pull latest image
-- Stop old container and start new one
+- Connects to production server via SSH
+- Pulls latest image from Docker Hub
+- Stops and removes old container
+- Starts new container with updated image on port 80
 
 ### Agent Configuration
+
+The pipeline runs in a dynamic Docker agent container with the following configuration:
 
 ```groovy
 agent {
     docker(
         image: 'hatanthanh/my-jenkins-agent:latest',
-        alwaysPull: true,
-        entrypoint: '',
+        alwaysPull: true,  // Always pull latest agent image
+        entrypoint: '',     // Disable default entrypoint
         args: '--network jenkins --group-add 984 -v /var/run/docker.sock:/var/run/docker.sock'
     )
 }
 ```
+
+**Key Agent Settings:**
+- `--network jenkins`: Connects agent to Jenkins network for communication
+- `--group-add 984`: Grants Docker socket access (GID must match host's docker group)
+- `-v /var/run/docker.sock`: Mounts Docker socket for building images
 
 ---
 
@@ -95,27 +141,35 @@ agent {
 
 ### Required Jenkins Credentials
 
-- `dockerhub-credentials` - Docker Hub username/password
-- `ssh-key` - SSH private key for production server
+The pipeline requires two credentials stored in Jenkins:
 
-### Environment Variables (Jenkinsfile)
+1. **`dockerhub-credentials`** (ID must match exactly)
+   - Type: Username with password
+   - Used for: Docker Hub authentication in Stage 3
+
+2. **`ssh-key`** (ID must match exactly)
+   - Type: SSH Username with private key
+   - Used for: Production server deployment in Stage 4
+
+### Environment Variables
+
+These variables must be configured in the `Jenkinsfile` environment section:
 
 ```groovy
-DOCKERHUB_USERNAME = "hatanthanh"
-APP_IMAGE_NAME     = "dev-excuse-app"
-DOCKER_CREDS       = "dockerhub-credentials"
-PROD_SERVER_CREDS  = "ssh-key"
-PROD_SERVER_HOST   = "hatthanh@172.16.16.176"
-CONTAINER_NAME     = "dev-excuse-prod"
+DOCKERHUB_USERNAME = "hatanthanh"              // Your Docker Hub username
+APP_IMAGE_NAME     = "dev-excuse-app"          // Application image name
+DOCKER_CREDS       = "dockerhub-credentials"   // Credential ID (must match Jenkins)
+PROD_SERVER_CREDS  = "ssh-key"                 // Credential ID (must match Jenkins)
+PROD_SERVER_HOST   = "hatthanh@172.16.16.176"  // Production server SSH connection
+CONTAINER_NAME     = "dev-excuse-prod"         // Container name on production
 ```
 
-### Docker Group GID
-
-Check your host's docker group GID:
-```bash
-grep docker /etc/group
-# Update --group-add 984 in Jenkinsfile if GID differs
-```
+**Important Configuration Notes:**
+- `DOCKER_CREDS` and `PROD_SERVER_CREDS` must exactly match the credential IDs in Jenkins
+- `PROD_SERVER_HOST` format: `username@hostname_or_ip`
+- Docker group GID (`--group-add 984`) must match your host's docker group GID
+  - Check with: `grep docker /etc/group`
+  - Update Jenkinsfile if GID differs
 
 ---
 
@@ -133,21 +187,26 @@ dev-excuse-app/
 
 ---
 
-## Quick Start
+## Deployment Process
 
-1. Clone repository
-2. Configure Jenkins credentials
-3. Update environment variables in `Jenkinsfile`
-4. Set up GitHub webhook
-5. Push to `main` branch → Pipeline runs automatically
+When code is pushed to the `main` branch:
+
+1. GitHub webhook triggers Jenkins pipeline (via ngrok tunnel)
+2. Jenkins spawns dynamic agent container
+3. Pipeline executes all 4 stages sequentially
+4. On success, application is automatically deployed to production
+5. Agent container is cleaned up after completion
+
+Pipeline status and logs can be monitored in Jenkins Blue Ocean UI at `http://localhost:8080/blue`.
 
 ---
 
-## Notes
+## Important Notes
 
-- Designed for demo/learning purposes
-- Ensure production server has Docker installed
-- Verify Docker group GID matches `--group-add` value in Jenkinsfile
+- **Docker Group GID:** The `--group-add 984` value in Jenkinsfile must match your host's docker group GID. Verify with `grep docker /etc/group` and update if different.
+- **Production Server:** Must have Docker installed and SSH access configured
+- **Network:** Jenkins and Socat containers must be on the same Docker network (`jenkins`)
+- **Credentials:** Credential IDs in Jenkinsfile must exactly match those configured in Jenkins
 
 ---
 
