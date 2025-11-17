@@ -15,7 +15,7 @@ RUN apk add --no-cache \
 # QUAN TRỌNG: GID phải khớp với GID của docker group trên HOST (nơi chạy Jenkins)
 # Trên host của bạn: docker:x:984 (GID = 984)
 # Khi mount docker socket từ host, quyền truy cập phụ thuộc vào GID này
-RUN addgroup -g 988 docker 2>/dev/null || true && \
+RUN addgroup -g 984 docker 2>/dev/null || true && \
     addgroup node docker
 
 # Bước 4: Chuyển về user 'node' (không-phải-root) để chạy pipeline
