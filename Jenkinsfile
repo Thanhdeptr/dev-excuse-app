@@ -16,7 +16,7 @@ pipeline {
             //    --network jenkins: Sửa lỗi "treo" (bắt buộc, để agent chung mạng master)
             //    --group-add 984: Ép container nhận quyền của group Docker Host (GID 984)
             //    -v ...: Mount Docker socket (bắt buộc, để chạy 'docker build')
-            args: '--network jenkins --group-add 984 -v /var/run/docker.sock:/var/run/docker.sock'
+            args: '--network jenkins --group-add 988 -v /var/run/docker.sock:/var/run/docker.sock'
         )
     }
 
@@ -26,8 +26,8 @@ pipeline {
         DOCKERHUB_USERNAME = "hatanthanh"
         APP_IMAGE_NAME     = "dev-excuse-app"         // Tên "Sản phẩm" của bạn
         DOCKER_CREDS       = "dockerhub-credentials"  // ID Credentials Docker Hub
-        PROD_SERVER_CREDS  = "ssh-key"      // ID Credentials SSH
-        PROD_SERVER_HOST   = "hatthanh@172.16.16.176"  // <-- THAY BẰNG IP SERVER PROD CỦA BẠN
+        PROD_SERVER_CREDS  = "SSH-key-EC2"      // ID Credentials SSH
+        PROD_SERVER_HOST   = "ubuntu@44.197.205.147"  // <-- THAY BẰNG IP SERVER PROD CỦA BẠN
         CONTAINER_NAME     = "dev-excuse-prod"      // Tên container chạy trên production
         // ------------------------------------------
         
