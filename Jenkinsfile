@@ -86,7 +86,7 @@ pipeline {
                             docker rm ${CONTAINER_NAME} || true
                             
                             echo 'Starting new container...'
-                            docker run -d --name ${CONTAINER_NAME} -p 80:3000 ${DOCKER_IMAGE_LATEST}
+                            docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${DOCKER_IMAGE_LATEST}
                             
                             echo "Deploy successful!"
                         '
