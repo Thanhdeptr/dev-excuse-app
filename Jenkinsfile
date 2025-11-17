@@ -16,7 +16,7 @@ pipeline {
             //    --network jenkins: Sửa lỗi "treo" (bắt buộc, để agent chung mạng master)
             //    --group-add 984: Ép container nhận quyền của group Docker Host (GID 984)
             //    -v ...: Mount Docker socket (bắt buộc, để chạy 'docker build')
-            args: '--network jenkins --group-add 988 -v /var/run/docker.sock:/var/run/docker.sock'
+            args: '--network jenkins --group-add 984 -v /var/run/docker.sock:/var/run/docker.sock'
         )
     }
 
