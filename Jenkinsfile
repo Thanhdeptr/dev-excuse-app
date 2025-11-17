@@ -24,7 +24,7 @@ pipeline {
     environment {
         // --- THAY ĐỔI CÁC GIÁ TRỊ CỦA BẠN VÀO ĐÂY ---
         DOCKERHUB_USERNAME = "hatanthanh"
-        APP_IMAGE_NAME     = "dev-excuse-app"         // Tên "Sản phẩm" của bạn
+        APP_IMAGE_NAME     = "dev-excuse-app"       
         DOCKER_CREDS       = "dockerhub-credentials"  // ID Credentials Docker Hub
         PROD_SERVER_CREDS  = "SSH-key-EC2"      // ID Credentials SSH
         PROD_SERVER_HOST   = "ubuntu@44.197.205.147"  // <-- THAY BẰNG IP SERVER PROD CỦA BẠN
