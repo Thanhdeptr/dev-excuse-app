@@ -105,9 +105,13 @@ pipeline {
                                 
                                 sleep 5
                                 
+                                # TEST ROLLBACK: Simulate failure để test rollback
+                                echo "Testing container health..."
                                 if docker ps | grep -q ${CONTAINER_NAME}; then
-                                    echo "Deploy successful!"
-                                    exit 0
+                                    # Simulate failure - luôn fail để test rollback
+                                    echo "Container is running, but simulating failure for rollback test..."
+                                    echo "ERROR: Simulated deployment failure for rollback testing!"
+                                    exit 1
                                 else
                                     echo "ERROR: Container failed to start!"
                                     docker logs ${CONTAINER_NAME} || true
