@@ -165,27 +165,33 @@ pipeline {
                 echo "OLD_VERSION = '${env.OLD_VERSION}'"
                 
                 // Nếu OLD_IMAGE null nhưng có OLD_VERSION, tạo lại OLD_IMAGE
+                def rollbackImage = ""
                 if ((!env.OLD_IMAGE || env.OLD_IMAGE == "null" || env.OLD_IMAGE == "") && env.OLD_VERSION && env.OLD_VERSION != "") {
-                    env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.OLD_VERSION}"
+                    rollbackImage = "${env.DOCKERHUB_USERNAME}/${env.APP_IMAGE_NAME}:${env.OLD_VERSION}"
+                    env.OLD_IMAGE = rollbackImage
                     echo "Reconstructed OLD_IMAGE from OLD_VERSION: ${env.OLD_IMAGE}"
+                } else if (env.OLD_IMAGE && env.OLD_IMAGE != "null" && env.OLD_IMAGE != "") {
+                    rollbackImage = env.OLD_IMAGE
                 }
                 
-                if (env.OLD_IMAGE && env.OLD_IMAGE != "" && env.OLD_IMAGE != "null") {
+                if (rollbackImage && rollbackImage != "" && rollbackImage != "null") {
                     sshagent(credentials: [PROD_SERVER_CREDS]) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
-                                echo "Rolling back to: ${env.OLD_IMAGE}"
+                                echo "Rolling back to: ${rollbackImage}"
                                 docker stop ${CONTAINER_NAME} || true
                                 docker rm ${CONTAINER_NAME} || true
-                                docker pull ${env.OLD_IMAGE} 2>/dev/null || true
-                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${env.OLD_IMAGE}
-                                echo "Rollback completed! Container is running with ${env.OLD_IMAGE}"
+                                docker pull ${rollbackImage} 2>/dev/null || true
+                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${rollbackImage}
+                                echo "Rollback completed! Container is running with ${rollbackImage}"
                             '
                         """
                     }
                     echo "Rollback successful! Application restored to previous version."
                 } else {
                     echo "No previous image found. Cannot rollback."
+                    echo "OLD_IMAGE: '${env.OLD_IMAGE}'"
+                    echo "OLD_VERSION: '${env.OLD_VERSION}'"
                 }
             }
             cleanWs()
