@@ -79,39 +79,48 @@ pipeline {
                 echo "Deploying to production..."
                 script {
                     sshagent(credentials: [PROD_SERVER_CREDS]) {
-                        // Lấy image cũ trực tiếp (đơn giản hơn)
-                        def oldImage = sh(
-                            script: "ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} 'docker inspect ${CONTAINER_NAME} --format \"{{.Config.Image}}\" 2>/dev/null || echo \"\"'",
-                            returnStdout: true
-                        ).trim()
+                        // Lấy version number của image đang chạy (tag số)
+                        def oldVersionScript = """
+                            ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
+                                if docker ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}\$"; then
+                                    # Lấy image đang chạy và extract version number
+                                    CURRENT_IMAGE=\$(docker inspect ${CONTAINER_NAME} --format "{{.Config.Image}}" 2>/dev/null)
+                                    if echo "\$CURRENT_IMAGE" | grep -qE ":[0-9]+\$"; then
+                                        echo "\$CURRENT_IMAGE" | sed -n "s/.*:\\([0-9]\\+\\)\$/\\1/p"
+                                    fi
+                                fi
+                            '
+                        """
+                        def oldVersion = sh(script: oldVersionScript, returnStdout: true).trim()
                         
-                        if (oldImage && oldImage != "") {
-                            env.OLD_IMAGE = oldImage
-                            echo "Saved old image for rollback: ${env.OLD_IMAGE}"
+                        if (oldVersion && oldVersion != "" && oldVersion.matches("\\d+")) {
+                            env.OLD_VERSION = oldVersion
+                            env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.OLD_VERSION}"
+                            echo "Saved old version for rollback: ${env.OLD_VERSION}"
+                            echo "Old image: ${env.OLD_IMAGE}"
+                        } else {
+                            echo "No old version found (container may not exist yet or using latest tag)"
                         }
                         
-                        // Deploy image mới
+                        // Deploy image mới với tag số (không dùng latest)
                         sh """
                             ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
-                                echo "Pulling new image..."
-                                docker pull ${DOCKER_IMAGE_LATEST}
+                                echo "Pulling new image: ${DOCKER_IMAGE_TAGGED}"
+                                docker pull ${DOCKER_IMAGE_TAGGED}
                                 
                                 echo "Stopping old container..."
                                 docker stop ${CONTAINER_NAME} || true
                                 docker rm ${CONTAINER_NAME} || true
                                 
-                                echo "Starting new container..."
-                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${DOCKER_IMAGE_LATEST}
+                                echo "Starting new container with version ${env.BUILD_NUMBER}..."
+                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${DOCKER_IMAGE_TAGGED}
                                 
                                 sleep 5
                                 
-                                # TEST ROLLBACK: Simulate failure để test rollback
-                                echo "Testing container health..."
+                                echo "Checking container status..."
                                 if docker ps | grep -q ${CONTAINER_NAME}; then
-                                    # Simulate failure - luôn fail để test rollback
-                                    echo "Container is running, but simulating failure for rollback test..."
-                                    echo "ERROR: Simulated deployment failure for rollback testing!"
-                                    exit 1
+                                    echo "Deploy successful! Container is running with version ${env.BUILD_NUMBER}"
+                                    exit 0
                                 else
                                     echo "ERROR: Container failed to start!"
                                     docker logs ${CONTAINER_NAME} || true
@@ -130,7 +139,7 @@ pipeline {
             echo "Pipeline succeeded!"
             // Cleanup old image nếu deploy thành công
             script {
-                if (env.OLD_IMAGE && env.OLD_IMAGE != "" && env.OLD_IMAGE != env.DOCKER_IMAGE_LATEST) {
+                if (env.OLD_IMAGE && env.OLD_IMAGE != "" && env.OLD_IMAGE != env.DOCKER_IMAGE_TAGGED) {
                     sshagent(credentials: [PROD_SERVER_CREDS]) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
