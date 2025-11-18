@@ -34,6 +34,9 @@ pipeline {
         // Các biến tự động
         DOCKER_IMAGE_TAGGED = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.BUILD_NUMBER}"
         DOCKER_IMAGE_LATEST = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:latest"
+        
+        // Rollback variables
+        OLD_IMAGE = ""
     }
 
     stages {
@@ -74,32 +77,92 @@ pipeline {
         stage('4. Deploy to Production') {
             steps {
                 echo "Deploying to production..."
-                // Lệnh 'ssh' đã có sẵn trong agent
-                sshagent(credentials: [PROD_SERVER_CREDS]) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
-                            echo 'Connected! Pulling new image...'
-                            docker pull ${DOCKER_IMAGE_LATEST}
-                            
-                            echo 'Stopping and removing old container...'
-                            docker stop ${CONTAINER_NAME} || true
-                            docker rm ${CONTAINER_NAME} || true
-                            
-                            echo 'Starting new container...'
-                            docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${DOCKER_IMAGE_LATEST}
-                            
-                            echo "Deploy successful!"
-                        '
-                    """
+                script {
+                    sshagent(credentials: [PROD_SERVER_CREDS]) {
+                        // Lấy image cũ trực tiếp (đơn giản hơn)
+                        def oldImage = sh(
+                            script: "ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} 'docker inspect ${CONTAINER_NAME} --format \"{{.Config.Image}}\" 2>/dev/null || echo \"\"'",
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (oldImage && oldImage != "") {
+                            env.OLD_IMAGE = oldImage
+                            echo "Saved old image for rollback: ${env.OLD_IMAGE}"
+                        }
+                        
+                        // Deploy image mới
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
+                                echo "Pulling new image..."
+                                docker pull ${DOCKER_IMAGE_LATEST}
+                                
+                                echo "Stopping old container..."
+                                docker stop ${CONTAINER_NAME} || true
+                                docker rm ${CONTAINER_NAME} || true
+                                
+                                echo "Starting new container..."
+                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${DOCKER_IMAGE_LATEST}
+                                
+                                sleep 5
+                                
+                                if docker ps | grep -q ${CONTAINER_NAME}; then
+                                    echo "Deploy successful!"
+                                    exit 0
+                                else
+                                    echo "ERROR: Container failed to start!"
+                                    docker logs ${CONTAINER_NAME} || true
+                                    exit 1
+                                fi
+                            '
+                        """
+                    }
                 }
             }
         }
     }
 
     post {
+        success {
+            echo "Pipeline succeeded!"
+            // Cleanup old image nếu deploy thành công
+            script {
+                if (env.OLD_IMAGE && env.OLD_IMAGE != "" && env.OLD_IMAGE != env.DOCKER_IMAGE_LATEST) {
+                    sshagent(credentials: [PROD_SERVER_CREDS]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
+                                echo "Cleaning up old image: ${env.OLD_IMAGE}"
+                                docker rmi ${env.OLD_IMAGE} || true
+                            '
+                        """
+                    }
+                }
+            }
+            cleanWs()
+        }
+        failure {
+            echo "Pipeline failed! Attempting rollback..."
+            script {
+                if (env.OLD_IMAGE && env.OLD_IMAGE != "") {
+                    sshagent(credentials: [PROD_SERVER_CREDS]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
+                                echo "Rolling back to: ${env.OLD_IMAGE}"
+                                docker stop ${CONTAINER_NAME} || true
+                                docker rm ${CONTAINER_NAME} || true
+                                docker pull ${env.OLD_IMAGE} 2>/dev/null || true
+                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${env.OLD_IMAGE}
+                                echo "Rollback completed!"
+                            '
+                        """
+                    }
+                } else {
+                    echo "No previous image found. Cannot rollback."
+                }
+            }
+            cleanWs()
+        }
         always {
             echo "Pipeline finished."
-            cleanWs()
         }
     }
 }
