@@ -95,11 +95,14 @@ pipeline {
                         
                         if (oldVersion && oldVersion != "" && oldVersion.matches("\\d+")) {
                             env.OLD_VERSION = oldVersion
-                            env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${oldVersion}"
+                            env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.OLD_VERSION}"
                             echo "Saved old version for rollback: ${env.OLD_VERSION}"
                             echo "Old image: ${env.OLD_IMAGE}"
+                            // Verify OLD_IMAGE was set correctly
+                            echo "Verifying OLD_IMAGE: ${env.OLD_IMAGE}"
                         } else {
                             echo "No old version found (container may not exist yet or using latest tag)"
+                            env.OLD_IMAGE = ""
                         }
                         
                         // Deploy image mới với tag số (không dùng latest)
@@ -157,7 +160,17 @@ pipeline {
         failure {
             echo "Pipeline failed! Attempting rollback..."
             script {
-                if (env.OLD_IMAGE && env.OLD_IMAGE != "") {
+                echo "DEBUG: Checking OLD_IMAGE value..."
+                echo "OLD_IMAGE = '${env.OLD_IMAGE}'"
+                echo "OLD_VERSION = '${env.OLD_VERSION}'"
+                
+                // Nếu OLD_IMAGE null nhưng có OLD_VERSION, tạo lại OLD_IMAGE
+                if ((!env.OLD_IMAGE || env.OLD_IMAGE == "null" || env.OLD_IMAGE == "") && env.OLD_VERSION && env.OLD_VERSION != "") {
+                    env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.OLD_VERSION}"
+                    echo "Reconstructed OLD_IMAGE from OLD_VERSION: ${env.OLD_IMAGE}"
+                }
+                
+                if (env.OLD_IMAGE && env.OLD_IMAGE != "" && env.OLD_IMAGE != "null") {
                     sshagent(credentials: [PROD_SERVER_CREDS]) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${PROD_SERVER_HOST} '
@@ -166,10 +179,11 @@ pipeline {
                                 docker rm ${CONTAINER_NAME} || true
                                 docker pull ${env.OLD_IMAGE} 2>/dev/null || true
                                 docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${env.OLD_IMAGE}
-                                echo "Rollback completed!"
+                                echo "Rollback completed! Container is running with ${env.OLD_IMAGE}"
                             '
                         """
                     }
+                    echo "Rollback successful! Application restored to previous version."
                 } else {
                     echo "No previous image found. Cannot rollback."
                 }
