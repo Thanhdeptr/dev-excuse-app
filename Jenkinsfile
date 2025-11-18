@@ -29,6 +29,7 @@ pipeline {
         PROD_SERVER_CREDS  = "SSH-key-EC2"      // ID Credentials SSH
         PROD_SERVER_HOST   = "ubuntu@44.197.205.147"  // <-- THAY BẰNG IP SERVER PROD CỦA BẠN
         CONTAINER_NAME     = "dev-excuse-prod"      // Tên container chạy trên production
+        ENV_FILE_PATH      = "/home/ubuntu/devops/.env"  // Đường dẫn file .env trên EC2
         // ------------------------------------------
         
         // Các biến tự động
@@ -116,18 +117,20 @@ pipeline {
                                 docker rm ${CONTAINER_NAME} || true
                                 
                                 echo "Starting new container with version ${env.BUILD_NUMBER}..."
-                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${DOCKER_IMAGE_TAGGED}
+                                echo "Mounting .env file from: ${ENV_FILE_PATH}"
+                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 --env-file "${ENV_FILE_PATH}" ${DOCKER_IMAGE_TAGGED}
                                 
                                 sleep 5
                                 
                                 echo "Checking container status..."
                                 if docker ps | grep -q ${CONTAINER_NAME}; then
-                                    # TEST ROLLBACK: Simulate failure để test rollback
-                                    echo "Container is running, but simulating failure for rollback test..."
-                                    echo "ERROR: Simulated deployment failure for rollback testing!"
-                                    exit 1
+                                    echo "Deploy successful! Container is running with version ${env.BUILD_NUMBER}"
+                                    echo "Checking container logs for database connection..."
+                                    docker logs ${CONTAINER_NAME} | tail -10
+                                    exit 0
                                 else
                                     echo "ERROR: Container failed to start!"
+                                    echo "Container logs:"
                                     docker logs ${CONTAINER_NAME} || true
                                     exit 1
                                 fi
@@ -182,7 +185,8 @@ pipeline {
                                 docker stop ${CONTAINER_NAME} || true
                                 docker rm ${CONTAINER_NAME} || true
                                 docker pull ${rollbackImage} 2>/dev/null || true
-                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 ${rollbackImage}
+                                echo "Starting rollback container with .env file from: ${ENV_FILE_PATH}"
+                                docker run -d --name ${CONTAINER_NAME} -p 3000:3000 --env-file "${ENV_FILE_PATH}" ${rollbackImage}
                                 echo "Rollback completed! Container is running with ${rollbackImage}"
                             '
                         """
