@@ -53,7 +53,16 @@ pipeline {
                 echo "Running tests..."
                 // Lệnh 'npm' đã có sẵn trong agent 'hatanthanh/my-jenkins-agent'
                 sh "npm install"
-                sh "npm run test"
+                // Set dummy environment variables for testing (tests use mocked database)
+                sh """
+                    export DB_HOST=localhost
+                    export DB_PORT=5432
+                    export DB_NAME=test_db
+                    export DB_USER=test_user
+                    export DB_PASSWORD=test_password
+                    export DB_SSL=false
+                    npm run test
+                """
             }
         }
 
