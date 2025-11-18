@@ -95,7 +95,7 @@ pipeline {
                         
                         if (oldVersion && oldVersion != "" && oldVersion.matches("\\d+")) {
                             env.OLD_VERSION = oldVersion
-                            env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${env.OLD_VERSION}"
+                            env.OLD_IMAGE = "${DOCKERHUB_USERNAME}/${APP_IMAGE_NAME}:${oldVersion}"
                             echo "Saved old version for rollback: ${env.OLD_VERSION}"
                             echo "Old image: ${env.OLD_IMAGE}"
                         } else {
