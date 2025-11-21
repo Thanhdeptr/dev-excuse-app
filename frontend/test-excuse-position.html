@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Excuse Position</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .control-group input {
+            width: 100px;
+            padding: 5px;
+        }
+        .preview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .excuse-image-wrapper {
+            position: relative;
+            display: inline-block;
+            max-width: 90%;
+        }
+        .excuse-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .excuse-text-overlay {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 20px 30px;
+            border-radius: 12px;
+            max-width: 350px;
+            min-width: 200px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            border: 2px solid #000;
+        }
+        .bubble-content {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #1a1a1a;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h3>Điều chỉnh vị trí</h3>
+        <div class="control-group">
+            <label>Top (%):</label>
+            <input type="number" id="top" value="40" step="1">
+        </div>
+        <div class="control-group">
+            <label>Right (%):</label>
+            <input type="number" id="right" value="12" step="1">
+        </div>
+        <div class="control-group">
+            <label>Font Size (rem):</label>
+            <input type="number" id="fontSize" value="1.4" step="0.1">
+        </div>
+        <div class="control-group">
+            <label>Max Width (px):</label>
+            <input type="number" id="maxWidth" value="350" step="10">
+        </div>
+        <button onclick="applyChanges()" style="margin-top: 10px; padding: 10px; width: 100%;">Apply</button>
+        <button onclick="copyCSS()" style="margin-top: 5px; padding: 10px; width: 100%;">Copy CSS</button>
+    </div>
+
+    <div class="preview">
+        <div class="excuse-image-wrapper">
+            <img src="images/excuse.jpg" alt="Excuse" class="excuse-image" id="excuse-image">
+            <div class="excuse-text-overlay" id="excuse-text-overlay">
+                <div class="bubble-content">
+                    It works on my machine.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function applyChanges() {
+            const overlay = document.getElementById('excuse-text-overlay');
+            const top = document.getElementById('top').value;
+            const right = document.getElementById('right').value;
+            const fontSize = document.getElementById('fontSize').value;
+            const maxWidth = document.getElementById('maxWidth').value;
+
+            overlay.style.top = top + '%';
+            overlay.style.right = right + '%';
+            overlay.style.fontSize = fontSize + 'rem';
+            overlay.style.maxWidth = maxWidth + 'px';
+        }
+
+        function copyCSS() {
+            const top = document.getElementById('top').value;
+            const right = document.getElementById('right').value;
+            const fontSize = document.getElementById('fontSize').value;
+            const maxWidth = document.getElementById('maxWidth').value;
+
+            const css = `.excuse-text-overlay {
+    position: absolute;
+    top: ${top}%;
+    right: ${right}%;
+    transform: translate(0, -50%);
+    background: rgba(255, 255, 255, 0.98);
+    padding: 20px 30px;
+    border-radius: 12px;
+    max-width: ${maxWidth}px;
+    min-width: 200px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    border: 2px solid #000;
+}
+
+.excuse-text-overlay .bubble-content {
+    text-align: center;
+    font-size: ${fontSize}rem;
+    font-weight: bold;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-family: Arial, sans-serif;
+}`;
+
+            navigator.clipboard.writeText(css).then(() => {
+                alert('CSS đã được copy!');
+            });
+        }
+
+        // Auto apply on input change
+        document.getElementById('top').addEventListener('input', applyChanges);
+        document.getElementById('right').addEventListener('input', applyChanges);
+        document.getElementById('fontSize').addEventListener('input', applyChanges);
+        document.getElementById('maxWidth').addEventListener('input', applyChanges);
+    </script>
+</body>
+</html>
+
